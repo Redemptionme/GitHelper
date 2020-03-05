@@ -16,7 +16,7 @@ public slots:
     void OpenDirClicked();
     void ReadMeClicked();
 
-private:
+public:
     Ui::GitHelperClass ui;
 
     QString exePath;

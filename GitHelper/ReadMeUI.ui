@@ -13,6 +13,19 @@
   <property name="windowTitle">
    <string>ReadMeUI</string>
   </property>
+  <widget class="QLabel" name="label">
+   <property name="geometry">
+    <rect>
+     <x>10</x>
+     <y>0</y>
+     <width>361</width>
+     <height>241</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>QLabel</string>
+   </property>
+  </widget>
  </widget>
  <layoutdefault spacing="6" margin="11"/>
  <resources/>
