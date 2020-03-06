@@ -11,6 +11,8 @@ def prepareGitPython(ptName):
     print("--------安装GitPythonGitPython-----------")
     if ptName == "Windows" :
         os.system("pip install GitPython")    
+        os.system("python -m pip install --upgrade pip") 
+        
     else:
         os.system("#curl https://bootstrap.pypa.io/get-pip.py | python3")
         os.system("pip3 install GitPython")
