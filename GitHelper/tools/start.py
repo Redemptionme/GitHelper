@@ -4,9 +4,14 @@ import sys
 import platform
 import csv
 import time
+import re
+import git
+from git import *
+
 
 platformName = platform.system()
 
+# 安装准备软件，目前只支持Windows
 def prepareGitPython(ptName):     
     print("--------安装GitPythonGitPython-----------")
     if ptName == "Windows" :
@@ -18,10 +23,11 @@ def prepareGitPython(ptName):
         os.system("pip3 install GitPython")
     print("--------安装GitPythonGitPython Done---------------------")
 
-
+# 将\\换/
 def changePath(path):
     return eval(repr(path).replace('\\\\', '/'))
 
+# 初始化csv模块
 def initConfig(confiPath):    
     if not os.path.exists(newFiles):
         os.makedirs(newFiles)
@@ -47,11 +53,59 @@ def initConfig(confiPath):
             writer.writerows(rows) 
             csvfile.close()
 
+
 def readConfig(filepath):
     with open(filepath) as f:
         f_csv = csv.DictReader(f)
         for row in f_csv:
             print(row)
+
+# 读取主模块的子模块配置，返回所有子模块的列表
+def readSubModuleCfg(path):
+    subModuleList = []
+    modulesTag = 1
+    listTag = 1
+    with open(path,'r') as modulesFile:
+        subModuleData = {'submodule': '', 'path': '', 'url': '','branch':''}
+        for line in modulesFile.readlines():
+            line = line.strip('\n')  #去掉列表中每一个元素的换行符
+            line = re.sub(r"\s+", "", line) #去掉空格
+            if modulesTag == 1:
+                line = line.replace('[submodule"','')
+                line = line.replace('"]','')
+                modulesTag += 1
+                subModuleData['submodule'] = line
+            elif modulesTag == 2:
+                line = line.replace('path=','')
+                modulesTag += 1
+                subModuleData['path'] = line
+            elif modulesTag == 3:
+                line = line.replace('url=','')
+                modulesTag += 1
+                subModuleData['url'] = line
+            elif modulesTag == 4:
+                line = line.replace('branch=','')
+                modulesTag = 1
+                subModuleData['branch'] = line
+                subModuleList.append(dict(subModuleData)) 
+                listTag += 1
+    return  subModuleList
+
+
+def mainModule(url,path,branch_name):
+    
+    bGitFiles = False
+    if os.path.exists(path + "/.git"): 
+        bGitFiles = True
+
+    if bGitFiles:
+        repo = Repo(path)
+    else:    
+        repo = git.Repo.clone_from(url, path, branch=branch_name)
+
+    remote = repo.remote()
+    remote.fetch()
+
 
 prepareGitPython(platformName)
 pyPath = sys.path[0] 
@@ -59,61 +113,15 @@ newFiles = pyPath[: - 26] + "/test"
 newFiles = changePath(newFiles)
 initConfig(pyPath + "/config")
 readConfig(pyPath + "/config/cfg.csv")
-
-  
-# print(os.getcwd()) #d:\workplace\Qt\GitHelper\GitHelper\tools
-# print(sys.path[0])
-
-# print(__file__) #D:\workplace\Qt\GitHelper\GitHelper\tools\start.py
-# print(os.path.abspath(__file__))
-# print(os.path.realpath(__file__))
-
-# print(os.path.split(os.path.realpath(__file__))) #('D:\\workplace\\Qt\\GitHelper\\GitHelper\\tools', 'start.py')
+ 
+mainModule('https://gitlab.skyunion.net/hanlinhe/tfather.git',newFiles,'master')
+_subModuleList = readSubModuleCfg(newFiles + "/.gitmodules")
 
 
-import git
-from git import *
-
-gitFiles = newFiles + "/.git"
-bGitFiles = False
-if os.path.exists(gitFiles): 
-    bGitFiles = True
-
-if bGitFiles:
-    repo = Repo(newFiles)
-else:    
-    repo = git.Repo.clone_from('https://gitlab.skyunion.net/hanlinhe/tfather.git', newFiles, branch='master')
-
-remote = repo.remote()
-remote.fetch()
-import re
 
 
-subModuleList = []
-modulesTag = 1
-with open(newFiles + "/.gitmodules",'r') as modulesFile:
-    subModuleData = {'submodule': '', 'path': '', 'url': '','branch':''}
-    for line in modulesFile.readlines():
-        line = line.strip('\n')  #去掉列表中每一个元素的换行符
-        line = re.sub(r"\s+", "", line) #去掉空格
-        if modulesTag == 1:
-            line = line.replace('[submodule"','')
-            line = line.replace('"]','')
-            modulesTag += 1
-            subModuleData['submodule'] = line
-        elif modulesTag == 2:
-            line = line.replace('path=','')
-            modulesTag += 1
-            subModuleData['path'] = line
-        elif modulesTag == 3:
-            line = line.replace('url=','')
-            modulesTag += 1
-            subModuleData['url'] = line
-        elif modulesTag == 4:
-            line = line.replace('branch=','')
-            modulesTag == 1
-            subModuleData['branch'] = line
-            subModuleList.insert(subModuleData) 
+
+
 
 #获取本地分支
 print([str(b) for b in repo.branches])
