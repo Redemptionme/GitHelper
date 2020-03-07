@@ -86,11 +86,34 @@ else:
 
 remote = repo.remote()
 remote.fetch()
+import re
 
+
+subModuleList = []
+modulesTag = 1
 with open(newFiles + "/.gitmodules",'r') as modulesFile:
+    subModuleData = {'submodule': '', 'path': '', 'url': '','branch':''}
     for line in modulesFile.readlines():
         line = line.strip('\n')  #去掉列表中每一个元素的换行符
-        print(line)
+        line = re.sub(r"\s+", "", line) #去掉空格
+        if modulesTag == 1:
+            line = line.replace('[submodule"','')
+            line = line.replace('"]','')
+            modulesTag += 1
+            subModuleData['submodule'] = line
+        elif modulesTag == 2:
+            line = line.replace('path=','')
+            modulesTag += 1
+            subModuleData['path'] = line
+        elif modulesTag == 3:
+            line = line.replace('url=','')
+            modulesTag += 1
+            subModuleData['url'] = line
+        elif modulesTag == 4:
+            line = line.replace('branch=','')
+            modulesTag == 1
+            subModuleData['branch'] = line
+            subModuleList.insert(subModuleData) 
 
 #获取本地分支
 print([str(b) for b in repo.branches])
