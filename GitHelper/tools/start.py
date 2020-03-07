@@ -19,27 +19,18 @@ def prepareGitPython(ptName):
     print("--------安装GitPythonGitPython Done---------------------")
 
 
-prepareGitPython(platformName)
+def changePath(path):
+    return eval(repr(path).replace('\\\\', '/'))
 
-selfpath = sys.path[0]
- 
+def initConfig(confiPath):    
+    if not os.path.exists(newFiles):
+        os.makedirs(newFiles)
 
-path = sys.path[0]
-path = path[: - 26]
-
-newFiles = path + "/test"
-newFiles = eval(repr(newFiles).replace('\\\\', '/'))
-
-
-
-if not os.path.exists(newFiles):
-    os.makedirs(newFiles)
-
-def initConfig(confiPath):
     if not os.path.exists(confiPath):
         os.makedirs(confiPath)
 
     fileName = confiPath +'/cfg.csv'
+    fileName = changePath(fileName)
 
     if not os.path.exists(fileName):        
         file = open(fileName,'w')
@@ -49,35 +40,35 @@ def initConfig(confiPath):
         
         file.close()        
         with open(fileName, 'w',newline='',encoding='utf-8') as csvfile:        
-            headers = ['TimeKey','IsMainGit','ProjectName','ProjectPath','GitPath','Branch']
-            rows = [(curTime, 1, 'TFather', newFiles, 'http', 'feature/develop')]
+            headers = ['Project','IsMainGit','ProjectName','ProjectPath','GitPath','Branch']
+            rows = [(newFiles, 1, 'TFather', newFiles, 'http', 'feature/develop')]
             writer = csv.writer(csvfile)
             writer.writerow(headers)
-            writer.writerows(rows)
-    
-    # with open(fileName, 'w',newline='',encoding='utf-8') as csvfile:       
-    # headers = ['Time','IsMainGit','ProjectName','ProjectPath','GitPath','Branch']
-    # rows = [('AA', 39.48, '6/11/2007', '9:36am', -0.18, 181800),
-    #         ('AIG', 71.38, '6/11/2007', '9:36am', -0.15, 195500),
-    #         ('AXP', 62.58, '6/11/2007', '9:36am', -0.46, 935000),
-    #     ]
-    # writer = csv.writer(csvfile)
-    # writer.writerow(headers)
-    # writer.writerows(rows)
-    #reader = csv.reader(csvfile)
-    #reader = csv.reader(csvfile)
-        
-    #file.close() 
-initConfig(selfpath + "/config")
+            writer.writerows(rows) 
+            csvfile.close()
 
-print(os.getcwd()) #d:\workplace\Qt\GitHelper\GitHelper\tools
-print(sys.path[0])
+def readConfig(filepath):
+    with open(filepath) as f:
+        f_csv = csv.DictReader(f)
+        for row in f_csv:
+            print(row)
 
-print(__file__) #D:\workplace\Qt\GitHelper\GitHelper\tools\start.py
-print(os.path.abspath(__file__))
-print(os.path.realpath(__file__))
+prepareGitPython(platformName)
+pyPath = sys.path[0] 
+newFiles = pyPath[: - 26] + "/test"
+newFiles = changePath(newFiles)
+initConfig(pyPath + "/config")
+readConfig(pyPath + "/config/cfg.csv")
 
-print(os.path.split(os.path.realpath(__file__))) #('D:\\workplace\\Qt\\GitHelper\\GitHelper\\tools', 'start.py')
+  
+# print(os.getcwd()) #d:\workplace\Qt\GitHelper\GitHelper\tools
+# print(sys.path[0])
+
+# print(__file__) #D:\workplace\Qt\GitHelper\GitHelper\tools\start.py
+# print(os.path.abspath(__file__))
+# print(os.path.realpath(__file__))
+
+# print(os.path.split(os.path.realpath(__file__))) #('D:\\workplace\\Qt\\GitHelper\\GitHelper\\tools', 'start.py')
 
 
 import git
@@ -95,6 +86,30 @@ else:
 
 remote = repo.remote()
 remote.fetch()
+
+with open(newFiles + "/.gitmodules",'r') as modulesFile:
+    for line in modulesFile.readlines():
+        line = line.strip('\n')  #去掉列表中每一个元素的换行符
+        print(line)
+
+#获取本地分支
+print([str(b) for b in repo.branches])
+#获取远端分支
+print(repo.git.branch('-r'))
+for ref in repo.git.branch('-r').split('\n'):
+    print(ref)
+
+
 remote.pull()
+
+# 判断分支是否存在
+# does_exist = True
+# try:
+#     repo.git.checkout('branch_name')
+# except repo.exc.GitCommandError:
+#     does_exist = False
+
+# print(does_exist)
+
 
 # os.system("pause")    
