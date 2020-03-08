@@ -91,6 +91,13 @@ def readSubModuleCfg(path):
                 listTag += 1
     return  subModuleList
 
+def updateSubModule(repo):
+    for submodule in repo.submodules: 
+        submodule.update(init=True,recursive=True)
+        # sub_repo = submodule.module()
+        # sub_repo.remote().pull()
+        # updateSubModule(sub_repo)
+
 
 def mainModule(url,path,branch_name):
     
@@ -105,33 +112,54 @@ def mainModule(url,path,branch_name):
 
     remote = repo.remote()
     remote.fetch()
+    remote.pull()
+
+    #获取本地分支
+    print([str(b) for b in repo.branches])
+    #获取远端分支
+    print(repo.git.branch('-r'))
+    for ref in repo.git.branch('-r').split('\n'):
+        print(ref)
+    
+    updateSubModule(repo)
+    
+    # 还需要切分支
+    #utput = repo.git.submodule('update', '--init','--recursive', '--merge', '--remote')
+#    submodule update --progress --init --recursive --merge --remote -- "child"
+
+    # 能切对应分支，但不会嵌套
+    # for submodule in repo.submodules: 
+    #     submodule.update(init=True)
+    #     sub_repo = submodule.module()
+    #     #sub_repo.git.checkout('devel')
+    #     #sub_repo.git.remote('maybeorigin').fetch()
+    #     for submodule2 in sub_repo.submodules: 
+    #         submodule2.update(init=True)
+        #print(test)
+        #for submodules2 in submodule.repo.submodules:
+            #submodules2.update(init=True)
+
+        
 
 
-prepareGitPython(platformName)
-pyPath = sys.path[0] 
-newFiles = pyPath[: - 26] + "/test"
-newFiles = changePath(newFiles)
-initConfig(pyPath + "/config")
-readConfig(pyPath + "/config/cfg.csv")
+#prepareGitPython(platformName)
+curFileList = os.path.split(os.path.realpath(__file__))
+pyFiles = curFileList[0]
+pyFiles = changePath(pyFiles)
+#pyPath = __file__
+newFiles = pyFiles[: - 26] + "/test" 
+#initConfig(pyFiles + "/config")
+#readConfig(pyFiles + "/config/cfg.csv")
  
 mainModule('https://gitlab.skyunion.net/hanlinhe/tfather.git',newFiles,'master')
 _subModuleList = readSubModuleCfg(newFiles + "/.gitmodules")
 
+#updateSubModule(_subModuleList)
 
 
 
 
 
-
-#获取本地分支
-print([str(b) for b in repo.branches])
-#获取远端分支
-print(repo.git.branch('-r'))
-for ref in repo.git.branch('-r').split('\n'):
-    print(ref)
-
-
-remote.pull()
 
 # 判断分支是否存在
 # does_exist = True
