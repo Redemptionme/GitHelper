@@ -91,13 +91,21 @@ def readSubModuleCfg(path):
                 listTag += 1
     return  subModuleList
 
-def updateSubModule(repo):
-    for submodule in repo.submodules: 
-        submodule.update(init=True,recursive=True)
-        # sub_repo = submodule.module()
-        # sub_repo.remote().pull()
-        # updateSubModule(sub_repo)
+# def updateSubModule(repo):
+#     for submodule in repo.submodules: 
+#         submodule.update(init=True,recursive=True)
+#         sub_repo = submodule.module()
+#         sub_repo.remote().pull()
+#         updateSubModule(sub_repo)
 
+def pullAll(repo):
+    repo.remote().pull()
+    for submodule in repo.submodules:
+        sub_repo = submodule.module()
+        pullAll(sub_repo)
+
+def mergeAll():
+    print('null')
 
 def mainModule(url,path,branch_name):
     
@@ -118,27 +126,38 @@ def mainModule(url,path,branch_name):
     print([str(b) for b in repo.branches])
     #获取远端分支
     print(repo.git.branch('-r'))
+    print(repo.git.branch())
     for ref in repo.git.branch('-r').split('\n'):
         print(ref)
     
-    updateSubModule(repo)
+    for submodule in repo.submodules: 
+        submodule.update(init=True,recursive=True)
+        submodule.module().remote().pull()
     
-    # 还需要切分支
-    #utput = repo.git.submodule('update', '--init','--recursive', '--merge', '--remote')
-#    submodule update --progress --init --recursive --merge --remote -- "child"
+    pullAll(repo)
+    print(repo.git.status())   # 返回通常的status几句信息
+    print(repo.is_dirty())    # 返回是否有改动（包括未add和未commit的）
 
-    # 能切对应分支，但不会嵌套
-    # for submodule in repo.submodules: 
-    #     submodule.update(init=True)
-    #     sub_repo = submodule.module()
-    #     #sub_repo.git.checkout('devel')
-    #     #sub_repo.git.remote('maybeorigin').fetch()
-    #     for submodule2 in sub_repo.submodules: 
-    #         submodule2.update(init=True)
-        #print(test)
-        #for submodules2 in submodule.repo.submodules:
-            #submodules2.update(init=True)
+    # 添加文件 可以是单个文件名，也可以是`[ ]`数组，还可以是`.`代表全部
+    #print(repo.git.add( '文件名' ))
 
+    # commit提交
+    #print(repo.git.commit( m='提交信息' ))
+    # 获取活动分支、未被管理的文件和判断是否有变更
+    # repo.is_dirty()  #返回布尔值
+    # repo.untracked_files    #返回未被管理的文件列表
+
+    
+    #repo=git.Git('/data/test4')
+    # repo.checkout('debug')
+    # print(repo.status())
+    # #所有git支持的命令这里都支持
+   
+    #repo.create_head('debug') # 创建分支
+    #repo.create_tag('v1.0') # 创建tag
+    #     3. 回滚
+    # repo.index.checkout(['a.txt']) # 回滚缓存区文件
+    # repo.index.reset(commit='486a9565e07ad291756159dd015eab6acda47e25',head=True) #回滚版本库文件
         
 
 
