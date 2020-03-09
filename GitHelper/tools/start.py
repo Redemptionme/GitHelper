@@ -42,7 +42,7 @@ def replaceRightFileName(path):
     path = eval(repr(path).replace('|', '_'))
     return path
 
-def iniCsvCfg(filesPath,csvName,csvTable):
+def iniCsvCfgKey(filesPath,csvName,csvTable):
     if not os.path.exists(filesPath):
         os.makedirs(filesPath)
     fileName = filesPath +'/' + csvName
@@ -100,6 +100,18 @@ def readConfig(filepath,csvName):
         #f_csv.# %%
     return outList
 
+def initProjectCsv(configPath,configName,keyHeaders,AllModules):
+    iniCsvCfgKey(configPath,configName,keyHeaders)    
+    # 将主模块解析结果写入
+
+    # #writeCsvByRow(configFilePath,keyHeaders,['1','1','1','1','1','1'])
+
+    # cfgList = readConfig(configPath,configName) 
+    # row = {keyHeaders[0]: '0',keyHeaders[1]: '0',keyHeaders[2]: '0',keyHeaders[3]: '0',keyHeaders[4]: '0',keyHeaders[5]: '0'}
+    # cfgList.append(row)
+    # writeCsvByDict(configFilePath,projectKeyHeaders,cfgList)
+
+
 def removeFiles(path):
     os.removedirs(path)
     #shutil.rmtree(path)
@@ -156,6 +168,29 @@ def mergeAll(repo):
 
     print('null')
 
+def IsFirstCheckOut(path):
+    if os.path.exists(path + "/.git"): 
+        return False
+    return True
+def initModule(url,path,branch_name):
+    repo = git.Repo.clone_from(url, path, branch=branch_name)
+    for submodule in repo.submodules: 
+        submodule.update(init=True,recursive=True)
+
+def updateModule(url,path,branch_name):
+    repo = Repo(path)
+    remote = repo.remote()
+    remote.fetch()
+    for submodule in repo.submodules: 
+        submodule.update(init=True,recursive=True)
+        subrepo = submodule.module()
+        
+        print(subrepo.working_dir)
+        submodule.module().remote().fetch()
+
+
+
+
 def mainModule(url,path,branch_name):
     
     bGitFiles = False
@@ -169,7 +204,7 @@ def mainModule(url,path,branch_name):
 
     remote = repo.remote()
     remote.fetch()
-    list1 = repo.refs
+     
     #repo.merge_base(list1[3])
     #repo.index.merge_tree(list1[3])
     batStr = '"TortoiseGitProc.exe" /command:merge remotes/origin/master /path:' + repo.working_dir +' /closeonend:3'
@@ -244,21 +279,24 @@ pyFiles = changePath(pyFiles)
 
 configPath = pyFiles + "/config"
 configName = 'cfg'
-configFilePath = configPath + '/' + configName
-projectKeyHeaders = ['ProjectPath','ProjectName','isMain','Url','FilePath','Branch']
-#removeFiles(configPath)
 
-iniCsvCfg(configPath,configName,projectKeyHeaders)
-#writeCsvByRow(configFilePath,projectKeyHeaders,['1','1','1','1','1','1'])
-cfgList = readConfig(configPath,configName) 
-row = {projectKeyHeaders[0]: '0',projectKeyHeaders[1]: '0',projectKeyHeaders[2]: '0',projectKeyHeaders[3]: '0',projectKeyHeaders[4]: '0',projectKeyHeaders[5]: '0'}
-cfgList.append(row)
-writeCsvByDict(configFilePath,projectKeyHeaders,cfgList)
+# configFilePath = configPath + '/' + configName
+keyHeaders = ['ProjectPath','ProjectName','isMain','Url','FilePath','Branch']
+# #removeFiles(configPath)
+
+
+
 
  # 输入参数
 gitUrl = 'https://gitlab.skyunion.net/hanlinhe/tfather.git'
 gitFiles = pyFiles[: - 26] + "/test" 
 gitBranch = 'master'
+
+AllModules = []
+
+
+initProjectCsv(configPath,configName,keyHeaders,AllModules)
+
 
 #mainModule(gitUrl,gitFiles,gitBranch)
 
