@@ -56,44 +56,49 @@ def iniCsvCfg(filesPath,csvName,csvTable):
         file.close()        
         with open(fileName, 'w',newline='',encoding='utf-8') as csvfile:        
             headers = csvTable
-            #rows = [(newFiles, 1, 'TFather', newFiles, 'http', 'feature/develop')]
             writer = csv.writer(csvfile)
             writer.writerow(headers)
-            #writer.writerows(rows) 
             csvfile.close()
-
-# 初始化csv模块
-def initConfig(confiPath):  
-    if not os.path.exists(confiPath):
-        os.makedirs(confiPath)
-
-    fileName = confiPath +'/cfg.csv'
-    fileName = changePath(fileName)
-
-    if not os.path.exists(fileName):        
-        file = open(fileName,'w')
-        time_local = time.localtime(time.time())
-        #转换成新的时间格式(2016-05-05 20:28:54)
-        curTime = time.strftime("%Y-%m-%d %H:%M:%S",time_local)
+ 
+# 写入
+def writeCsvByRow(filePath,headers,valueList): 
+    if os.path.exists(filePath): 
+        allList = []
         
-        file.close()        
-        with open(fileName, 'w',newline='',encoding='utf-8') as csvfile:        
-            headers = ['Project','IsMainGit','ProjectName','ProjectPath','GitPath','Branch']
-            rows = [(fileName, 1, 'TFather', fileName, 'http', 'feature/develop'),(fileName, 1, 'TFather', fileName, 'http', 'feature/develop')]            
-            rows.append((fileName, 1, 'TFather', fileName, 'http', 'feature/develop'))
-            writer = csv.writer(csvfile)
-            writer.writerow(headers)
-            #writer.writerows(rows) 
+        with open(filePath, 'r',newline='',encoding='utf-8') as csvfile:  
+            f_csv = csv.reader(csvfile)
+            curheaders = next(f_csv)       
+            for row in f_csv:
+                allList.append(row)
+        if curheaders != headers:
+            print('head not equal')
+
+        allList.append(valueList)
+                
+        with open(filePath, 'w',newline='',encoding='utf-8') as csvfile:    
+            f_csv = csv.writer(csvfile)
+            f_csv.writerow(headers)
+            f_csv.writerows(allList)
             csvfile.close()
 
+def writeCsvByDict(filePath,headers,rows):
+    with open(filePath, 'w',newline='',encoding='utf-8') as f:
+        f_csv = csv.DictWriter(f, headers)
+        f_csv.writeheader()
+        f_csv.writerows(rows)
+        f.close()
+    
 
 def readConfig(filepath,csvName):
+    outList = []
     with open(filepath + '/' + csvName) as f:
         f_csv = csv.DictReader(f)
-        print(f_csv)                
+        #print(f_csv)                
         for row in f_csv:
+            outList.append(row)
             print(row)
         #f_csv.# %%
+    return outList
 
 def removeFiles(path):
     os.removedirs(path)
@@ -229,7 +234,7 @@ def mainModule(url,path,branch_name):
     # repo.index.reset(commit='486a9565e07ad291756159dd015eab6acda47e25',head=True) #回滚版本库文件
         
 
-
+# 安装预备软件
 #prepareGitPython(platformName)
 curFileList = os.path.split(os.path.realpath(__file__))
 pyFiles = curFileList[0]
@@ -239,15 +244,16 @@ pyFiles = changePath(pyFiles)
 
 configPath = pyFiles + "/config"
 configName = 'cfg'
+configFilePath = configPath + '/' + configName
 projectKeyHeaders = ['ProjectPath','ProjectName','isMain','Url','FilePath','Branch']
 #removeFiles(configPath)
 
 iniCsvCfg(configPath,configName,projectKeyHeaders)
-#initConfig(pyFiles + "/config",)
-readConfig(configPath,configName)
- 
-
-
+#writeCsvByRow(configFilePath,projectKeyHeaders,['1','1','1','1','1','1'])
+cfgList = readConfig(configPath,configName) 
+row = {projectKeyHeaders[0]: '0',projectKeyHeaders[1]: '0',projectKeyHeaders[2]: '0',projectKeyHeaders[3]: '0',projectKeyHeaders[4]: '0',projectKeyHeaders[5]: '0'}
+cfgList.append(row)
+writeCsvByDict(configFilePath,projectKeyHeaders,cfgList)
 
  # 输入参数
 gitUrl = 'https://gitlab.skyunion.net/hanlinhe/tfather.git'
