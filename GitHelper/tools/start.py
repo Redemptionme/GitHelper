@@ -7,7 +7,7 @@ import time
 import re
 import git
 from git import *
-
+import shutil
 
 platformName = platform.system()
 
@@ -24,14 +24,46 @@ def prepareGitPython(ptName):
     print("--------安装GitPythonGitPython Done---------------------")
 
 # 将\\换/
+def replacePathChar(path,oldchar,newchar):
+    return eval(repr(path).replace(oldchar, newchar))
+
 def changePath(path):
-    return eval(repr(path).replace('\\\\', '/'))
+    return replacePathChar(path,'\\\\', '/')
+    
+def replaceRightFileName(path):
+    path = eval(repr(path).replace('\\', '_'))
+    path = eval(repr(path).replace('/', '_'))
+    path = eval(repr(path).replace(':', '_'))
+    path = eval(repr(path).replace('*', '_'))
+    path = eval(repr(path).replace('?', '_'))
+    path = eval(repr(path).replace('"', '_'))
+    path = eval(repr(path).replace('<', '_'))
+    path = eval(repr(path).replace('>', '_'))
+    path = eval(repr(path).replace('|', '_'))
+    return path
+
+def iniCsvCfg(filesPath,csvName,csvTable):
+    if not os.path.exists(filesPath):
+        os.makedirs(filesPath)
+    fileName = filesPath +'/' + csvName
+    fileName = changePath(fileName)
+    if not os.path.exists(fileName):        
+        file = open(fileName,'w')
+        #time_local = time.localtime(time.time())
+        #转换成新的时间格式(2016-05-05 20:28:54)
+        #curTime = time.strftime("%Y-%m-%d %H:%M:%S",time_local)
+        
+        file.close()        
+        with open(fileName, 'w',newline='',encoding='utf-8') as csvfile:        
+            headers = csvTable
+            #rows = [(newFiles, 1, 'TFather', newFiles, 'http', 'feature/develop')]
+            writer = csv.writer(csvfile)
+            writer.writerow(headers)
+            #writer.writerows(rows) 
+            csvfile.close()
 
 # 初始化csv模块
-def initConfig(confiPath):    
-    if not os.path.exists(newFiles):
-        os.makedirs(newFiles)
-
+def initConfig(confiPath):  
     if not os.path.exists(confiPath):
         os.makedirs(confiPath)
 
@@ -47,18 +79,26 @@ def initConfig(confiPath):
         file.close()        
         with open(fileName, 'w',newline='',encoding='utf-8') as csvfile:        
             headers = ['Project','IsMainGit','ProjectName','ProjectPath','GitPath','Branch']
-            rows = [(newFiles, 1, 'TFather', newFiles, 'http', 'feature/develop')]
+            rows = [(fileName, 1, 'TFather', fileName, 'http', 'feature/develop'),(fileName, 1, 'TFather', fileName, 'http', 'feature/develop')]            
+            rows.append((fileName, 1, 'TFather', fileName, 'http', 'feature/develop'))
             writer = csv.writer(csvfile)
             writer.writerow(headers)
-            writer.writerows(rows) 
+            #writer.writerows(rows) 
             csvfile.close()
 
 
-def readConfig(filepath):
-    with open(filepath) as f:
+def readConfig(filepath,csvName):
+    with open(filepath + '/' + csvName) as f:
         f_csv = csv.DictReader(f)
+        print(f_csv)                
         for row in f_csv:
             print(row)
+        #f_csv.# %%
+
+def removeFiles(path):
+    os.removedirs(path)
+    #shutil.rmtree(path)
+    #os.mkdir(path)
 
 # 读取主模块的子模块配置，返回所有子模块的列表
 def readSubModuleCfg(path):
@@ -104,7 +144,11 @@ def pullAll(repo):
         sub_repo = submodule.module()
         pullAll(sub_repo)
 
-def mergeAll():
+def mergeAll(repo):
+    repo.remote().fetch()
+    remoteMaster = repo.git.branch('-r')['origin/master'] 
+    repo.index.merge_tree(remoteMaster)
+
     print('null')
 
 def mainModule(url,path,branch_name):
@@ -120,7 +164,26 @@ def mainModule(url,path,branch_name):
 
     remote = repo.remote()
     remote.fetch()
-    remote.pull()
+    list1 = repo.refs
+    #repo.merge_base(list1[3])
+    #repo.index.merge_tree(list1[3])
+    batStr = '"TortoiseGitProc.exe" /command:merge remotes/origin/master /path:' + repo.working_dir +' /closeonend:3'
+    print(batStr)
+    os.system(batStr)
+    print(repo.git.status())   # 返回通常的status几句信息  
+    print(repo.is_dirty())    # 返回是否有改动（包括未add和未commit的）
+    
+    
+    # try:
+    #     remote.pull()
+    # except git.GitCommandError as exception:
+    #     print(exception)
+    #     if exception.stdout:
+    #         print('!! stdout was:')
+    #         print(exception.stdout)
+    #     if exception.stderr:
+    #         print('!! stderr was:')
+    #         print(exception.stderr)
 
     #获取本地分支
     print([str(b) for b in repo.branches])
@@ -132,14 +195,20 @@ def mainModule(url,path,branch_name):
     
     for submodule in repo.submodules: 
         submodule.update(init=True,recursive=True)
+        subrepo = submodule.module()
+        
+        print(subrepo.working_dir)
         submodule.module().remote().pull()
     
     pullAll(repo)
+    mergeAll(repo)
     print(repo.git.status())   # 返回通常的status几句信息
     print(repo.is_dirty())    # 返回是否有改动（包括未add和未commit的）
 
     # 添加文件 可以是单个文件名，也可以是`[ ]`数组，还可以是`.`代表全部
     #print(repo.git.add( '文件名' ))
+    #还原合并
+    #git.exe reset --merge
 
     # commit提交
     #print(repo.git.commit( m='提交信息' ))
@@ -165,13 +234,29 @@ def mainModule(url,path,branch_name):
 curFileList = os.path.split(os.path.realpath(__file__))
 pyFiles = curFileList[0]
 pyFiles = changePath(pyFiles)
-#pyPath = __file__
-newFiles = pyFiles[: - 26] + "/test" 
-#initConfig(pyFiles + "/config")
-#readConfig(pyFiles + "/config/cfg.csv")
+
+
+
+configPath = pyFiles + "/config"
+configName = 'cfg'
+projectKeyHeaders = ['ProjectPath','ProjectName','isMain','Url','FilePath','Branch']
+#removeFiles(configPath)
+
+iniCsvCfg(configPath,configName,projectKeyHeaders)
+#initConfig(pyFiles + "/config",)
+readConfig(configPath,configName)
  
-mainModule('https://gitlab.skyunion.net/hanlinhe/tfather.git',newFiles,'master')
-_subModuleList = readSubModuleCfg(newFiles + "/.gitmodules")
+
+
+
+ # 输入参数
+gitUrl = 'https://gitlab.skyunion.net/hanlinhe/tfather.git'
+gitFiles = pyFiles[: - 26] + "/test" 
+gitBranch = 'master'
+
+#mainModule(gitUrl,gitFiles,gitBranch)
+
+#_subModuleList = readSubModuleCfg(gitFiles + "/.gitmodules")
 
 #updateSubModule(_subModuleList)
 
