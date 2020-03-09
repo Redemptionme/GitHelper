@@ -100,16 +100,16 @@ def readConfig(filepath,csvName):
         #f_csv.# %%
     return outList
 
-def initProjectCsv(configPath,configName,keyHeaders,AllModules):
+def initProjectCsv(configPath,configName,keyHeaders,csvDataList):
     iniCsvCfgKey(configPath,configName,keyHeaders)    
     # 将主模块解析结果写入
 
     # #writeCsvByRow(configFilePath,keyHeaders,['1','1','1','1','1','1'])
 
-    # cfgList = readConfig(configPath,configName) 
+    cfgList = readConfig(configPath,configName) 
     # row = {keyHeaders[0]: '0',keyHeaders[1]: '0',keyHeaders[2]: '0',keyHeaders[3]: '0',keyHeaders[4]: '0',keyHeaders[5]: '0'}
-    # cfgList.append(row)
-    # writeCsvByDict(configFilePath,projectKeyHeaders,cfgList)
+    #cfgList.append(csvDataList)
+    writeCsvByDict(configPath + '/' + configName,keyHeaders,csvDataList)
 
 
 def removeFiles(path):
@@ -172,10 +172,19 @@ def IsFirstCheckOut(path):
     if os.path.exists(path + "/.git"): 
         return False
     return True
-def initModule(url,path,branch_name):
+
+def initModule(url,path,branch_name,csvDataList):
     repo = git.Repo.clone_from(url, path, branch=branch_name)
     for submodule in repo.submodules: 
         submodule.update(init=True,recursive=True)
+        subrepo = submodule.module()
+        row = { keyHeaders[0]: gitFilePath,
+            keyHeaders[1]: gitProjectName,
+            keyHeaders[2]: 1,
+            keyHeaders[3]: gitUrl,
+            keyHeaders[4]: gitFilePath,
+            keyHeaders[5]: gitBranch}
+        csvDataList.append(row)
 
 def updateModule(url,path,branch_name):
     repo = Repo(path)
@@ -278,7 +287,7 @@ pyFiles = changePath(pyFiles)
 
 
 configPath = pyFiles + "/config"
-configName = 'cfg'
+configName = 'cfg.csv' # 后缀名随便改
 
 # configFilePath = configPath + '/' + configName
 keyHeaders = ['ProjectPath','ProjectName','isMain','Url','FilePath','Branch']
@@ -289,13 +298,27 @@ keyHeaders = ['ProjectPath','ProjectName','isMain','Url','FilePath','Branch']
 
  # 输入参数
 gitUrl = 'https://gitlab.skyunion.net/hanlinhe/tfather.git'
-gitFiles = pyFiles[: - 26] + "/test" 
+gitProjectName = 'test'
+gitFilePath = pyFiles[: - 26] + '/' + gitProjectName
 gitBranch = 'master'
 
-AllModules = []
+if IsFirstCheckOut(gitFilePath):
+    csvDataList = [] 
+    row = { keyHeaders[0]: gitFilePath,
+            keyHeaders[1]: gitProjectName,
+            keyHeaders[2]: 1,
+            keyHeaders[3]: gitUrl,
+            keyHeaders[4]: gitFilePath,
+            keyHeaders[5]: gitBranch}
+    csvDataList.append(row)
+
+    initModule(gitUrl,gitFilePath,gitBranch,csvDataList)
+    initProjectCsv(configPath,configName,keyHeaders,csvDataList)
+else:
+    print('update')
+    #updateModule(gitUrl,gitFilePath,gitBranch)
 
 
-initProjectCsv(configPath,configName,keyHeaders,AllModules)
 
 
 #mainModule(gitUrl,gitFiles,gitBranch)
