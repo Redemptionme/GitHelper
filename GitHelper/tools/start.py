@@ -11,14 +11,19 @@ import shutil
 
 platformName = platform.system()
 
+def isWin():
+    return platform.system() == "Windows" 
+def isMac():
+    return platform.system() == "Darwin"
+    
 # 安装准备软件，目前只支持Windows
 def prepareGitPython(ptName):     
     print("--------安装GitPythonGitPython-----------")
-    if ptName == "Windows" :
+    if isWin:
         os.system("pip install GitPython")    
         os.system("python -m pip install --upgrade pip") 
         
-    else:
+    elif isMac:
         os.system("#curl https://bootstrap.pypa.io/get-pip.py | python3")
         os.system("pip3 install GitPython")
     print("--------安装GitPythonGitPython Done---------------------")
@@ -154,12 +159,7 @@ def readSubModuleCfg(path):
 #         sub_repo = submodule.module()
 #         sub_repo.remote().pull()
 #         updateSubModule(sub_repo)
-
-def pullAll(repo):
-    repo.remote().pull()
-    for submodule in repo.submodules:
-        sub_repo = submodule.module()
-        pullAll(sub_repo)
+ 
 
 def mergeAll(repo):
     repo.remote().fetch()
@@ -205,6 +205,47 @@ def updateModule(url,path,branch_name,csvDataList):
         submodule.module().remote().pull()
 
 
+#https://blog.csdn.net/tenfyguo/article/details/7380836
+#https://blog.csdn.net/qq_37291064/article/details/100311679
+
+def commitAll(path):
+    repo = Repo(path)
+    for submodule in repo.submodules: 
+        subrepo = submodule.module()
+        if subrepo.is_dirty():
+            if is_win:
+                batStr = '"TortoiseGitProc.exe" /command:commit /path:' + subrepo.working_dir +' /closeonend:3'
+                os.system(batStr)
+            elif isMac:
+                subrepo.git.commit( m='提交信息' )
+    if is_win:
+        if repo.is_dirty():
+            batStr = '"TortoiseGitProc.exe" /command:commit /path:' + repo.working_dir +' /closeonend:3'
+            os.system(batStr)
+        elif isMac:
+                repo.git.commit( m='提交信息' )
+
+def mergeMainBranch():
+    print('1')
+
+
+def pullAll(url,path,branch_name,csvDataList):
+    repo = Repo(path)
+    remote = repo.remote()
+    remote.fetch()
+    remote.pull()
+    for submodule in repo.submodules: 
+        submodule.update(init=True,recursive=True)
+        subrepo = submodule.module()
+        row = { keyHeaders[0]: changePath(subrepo.working_dir),
+            keyHeaders[1]: replaceRightFileName(subrepo.working_dir),
+            keyHeaders[2]: 0,
+            keyHeaders[3]: submodule.url,
+            keyHeaders[4]: changePath(subrepo.working_dir),
+            keyHeaders[5]: submodule.branch_name}
+        csvDataList.append(row)
+        submodule.module().remote().fetch()
+        submodule.module().remote().pull()
 
 def mainModule(url,path,branch_name):
     
@@ -305,8 +346,8 @@ gitProjectName = 'test'
 gitFilePath = pyFiles[: - 26] + '/' + gitProjectName
 gitBranch = 'master'
 
-removeFiles(gitFilePath)
-removeFiles(configPath)
+#removeFiles(gitFilePath)
+#removeFiles(configPath)
 
 csvDataList = [] 
 row = { keyHeaders[0]: gitFilePath,
@@ -328,8 +369,6 @@ writeCsvByDict(configPath + '/' + configName,keyHeaders,csvDataList)
 
 
 
-
-#mainModule(gitUrl,gitFiles,gitBranch)
 
 #_subModuleList = readSubModuleCfg(gitFiles + "/.gitmodules")
 
