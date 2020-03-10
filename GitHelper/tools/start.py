@@ -100,14 +100,22 @@ def readConfig(filepath,csvName):
         #f_csv.# %%
     return outList
  
+import errno, os, stat, shutil
 
+def handle_remove_read_only(func, path, exc):
+    excvalue = exc[1]
+    if func in (os.rmdir, os.remove, os.unlink) and excvalue.errno == errno.EACCES:
+      os.chmod(path, stat.S_IRWXU| stat.S_IRWXG| stat.S_IRWXO) # 0777
+      func(path)
+    else:
+      raise 
 
 def removeFiles(path):
     if os.path.exists(path): 
-        shutil.rmtree(path)  
-        os.mkdir(path)  
-    #shutil.rmtree(path)
-    #os.mkdir(path)
+        #shutil.rmtree(path) 
+        shutil.rmtree(path, onerror=handle_remove_read_only)
+        #os.mkdir(path)  
+        #os.removedirs(path)
 
 # 读取主模块的子模块配置，返回所有子模块的列表
 def readSubModuleCfg(path):
@@ -297,8 +305,8 @@ gitProjectName = 'test'
 gitFilePath = pyFiles[: - 26] + '/' + gitProjectName
 gitBranch = 'master'
 
-#removeFiles(gitFilePath)
-#removeFiles(configPath)
+removeFiles(gitFilePath)
+removeFiles(configPath)
 
 csvDataList = [] 
 row = { keyHeaders[0]: gitFilePath,
