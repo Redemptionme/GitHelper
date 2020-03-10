@@ -99,21 +99,13 @@ def readConfig(filepath,csvName):
             print(row)
         #f_csv.# %%
     return outList
-
-def initProjectCsv(configPath,configName,keyHeaders,csvDataList):
-    iniCsvCfgKey(configPath,configName,keyHeaders)    
-    # 将主模块解析结果写入
-
-    # #writeCsvByRow(configFilePath,keyHeaders,['1','1','1','1','1','1'])
-
-    cfgList = readConfig(configPath,configName) 
-    # row = {keyHeaders[0]: '0',keyHeaders[1]: '0',keyHeaders[2]: '0',keyHeaders[3]: '0',keyHeaders[4]: '0',keyHeaders[5]: '0'}
-    #cfgList.append(csvDataList)
-    writeCsvByDict(configPath + '/' + configName,keyHeaders,csvDataList)
+ 
 
 
 def removeFiles(path):
-    os.removedirs(path)
+    if os.path.exists(path): 
+        shutil.rmtree(path)  
+        os.mkdir(path)  
     #shutil.rmtree(path)
     #os.mkdir(path)
 
@@ -178,25 +170,31 @@ def initModule(url,path,branch_name,csvDataList):
     for submodule in repo.submodules: 
         submodule.update(init=True,recursive=True)
         subrepo = submodule.module()
-        row = { keyHeaders[0]: gitFilePath,
-            keyHeaders[1]: gitProjectName,
-            keyHeaders[2]: 1,
-            keyHeaders[3]: gitUrl,
-            keyHeaders[4]: gitFilePath,
-            keyHeaders[5]: gitBranch}
+        row = { keyHeaders[0]: changePath(subrepo.working_dir),
+            keyHeaders[1]: replaceRightFileName(subrepo.working_dir),
+            keyHeaders[2]: 0,
+            keyHeaders[3]: submodule.url,
+            keyHeaders[4]: changePath(subrepo.working_dir),
+            keyHeaders[5]: submodule.branch_name}
         csvDataList.append(row)
 
-def updateModule(url,path,branch_name):
+def updateModule(url,path,branch_name,csvDataList):
     repo = Repo(path)
     remote = repo.remote()
     remote.fetch()
+    remote.pull()
     for submodule in repo.submodules: 
         submodule.update(init=True,recursive=True)
         subrepo = submodule.module()
-        
-        print(subrepo.working_dir)
+        row = { keyHeaders[0]: changePath(subrepo.working_dir),
+            keyHeaders[1]: replaceRightFileName(subrepo.working_dir),
+            keyHeaders[2]: 0,
+            keyHeaders[3]: submodule.url,
+            keyHeaders[4]: changePath(subrepo.working_dir),
+            keyHeaders[5]: submodule.branch_name}
+        csvDataList.append(row)
         submodule.module().remote().fetch()
-
+        submodule.module().remote().pull()
 
 
 
@@ -291,9 +289,6 @@ configName = 'cfg.csv' # 后缀名随便改
 
 # configFilePath = configPath + '/' + configName
 keyHeaders = ['ProjectPath','ProjectName','isMain','Url','FilePath','Branch']
-# #removeFiles(configPath)
-
-
 
 
  # 输入参数
@@ -302,21 +297,26 @@ gitProjectName = 'test'
 gitFilePath = pyFiles[: - 26] + '/' + gitProjectName
 gitBranch = 'master'
 
-if IsFirstCheckOut(gitFilePath):
-    csvDataList = [] 
-    row = { keyHeaders[0]: gitFilePath,
-            keyHeaders[1]: gitProjectName,
-            keyHeaders[2]: 1,
-            keyHeaders[3]: gitUrl,
-            keyHeaders[4]: gitFilePath,
-            keyHeaders[5]: gitBranch}
-    csvDataList.append(row)
+#removeFiles(gitFilePath)
+#removeFiles(configPath)
 
+csvDataList = [] 
+row = { keyHeaders[0]: gitFilePath,
+        keyHeaders[1]: replaceRightFileName(gitFilePath),
+        keyHeaders[2]: 1,
+        keyHeaders[3]: gitUrl,
+        keyHeaders[4]: gitFilePath,
+        keyHeaders[5]: gitBranch}
+csvDataList.append(row)
+
+if IsFirstCheckOut(gitFilePath): 
     initModule(gitUrl,gitFilePath,gitBranch,csvDataList)
-    initProjectCsv(configPath,configName,keyHeaders,csvDataList)
+    iniCsvCfgKey(configPath,configName,keyHeaders)      
 else:
-    print('update')
-    #updateModule(gitUrl,gitFilePath,gitBranch)
+    updateModule(gitUrl,gitFilePath,gitBranch,csvDataList)
+
+cfgList = readConfig(configPath,configName) 
+writeCsvByDict(configPath + '/' + configName,keyHeaders,csvDataList)
 
 
 
