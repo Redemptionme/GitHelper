@@ -159,14 +159,7 @@ def readSubModuleCfg(path):
 #         sub_repo = submodule.module()
 #         sub_repo.remote().pull()
 #         updateSubModule(sub_repo)
- 
-
-def mergeAll(repo):
-    repo.remote().fetch()
-    remoteMaster = repo.git.branch('-r')['origin/master'] 
-    repo.index.merge_tree(remoteMaster)
-
-    print('null')
+  
 
 def IsFirstCheckOut(path):
     if os.path.exists(path + "/.git"): 
@@ -254,7 +247,12 @@ def pullAll(url,path,branch_name,csvDataList):
     remote.fetch()
     remote.pull()
 
-def mergeAll(url,path,branch_name,csvDataList):
+def mergeAll(url,path,branch_name,csvDataList):    
+    # repo.remote().fetch()
+    # remoteMaster = repo.git.branch('-r')['origin/master'] 
+    # repo.index.merge_tree(remoteMaster)
+
+    print('null')
     repo = Repo(path)
     remote = repo.remote()
     remote.fetch()
@@ -323,8 +321,7 @@ def mainModule(url,path,branch_name):
         print(subrepo.working_dir)
         submodule.module().remote().pull()
     
-    pullAll(repo)
-    mergeAll(repo)
+    
     print(repo.git.status())   # 返回通常的status几句信息
     print(repo.is_dirty())    # 返回是否有改动（包括未add和未commit的）
 
