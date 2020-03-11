@@ -200,6 +200,7 @@ def updateModule(url,path,branch_name,csvDataList):
 
 #https://blog.csdn.net/tenfyguo/article/details/7380836
 #https://blog.csdn.net/qq_37291064/article/details/100311679
+#https://cloud.tencent.com/developer/article/1520592
 
 def commitAll(path):
     repo = Repo(path)
@@ -251,8 +252,7 @@ def mergeAll(url,path,branch_name,csvDataList):
     # repo.remote().fetch()
     # remoteMaster = repo.git.branch('-r')['origin/master'] 
     # repo.index.merge_tree(remoteMaster)
-
-    print('null')
+ 
     repo = Repo(path)
     remote = repo.remote()
     remote.fetch()
@@ -268,9 +268,12 @@ def mergeAll(url,path,branch_name,csvDataList):
             keyHeaders[5]: submodule.branch_name}
         csvDataList.append(row)
         submodule.module().remote().fetch()
-        submodule.module().remote().pull()
+        remoteBranch = subrepo.git.branch('-r')['origin/' + submodule.branch_name] 
+        subrepo.index.merge_tree(remoteBranch)
  
-    remote.pull()
+    remoteBranch = repo.git.branch('-r')['origin/' + branch_name] 
+    repo.index.merge_tree(remoteBranch)
+ 
 
 def mainModule(url,path,branch_name):
     
@@ -392,7 +395,7 @@ cfgList = readConfig(configPath,configName)
 writeCsvByDict(configPath + '/' + configName,keyHeaders,csvDataList)
 
 commitAll(gitFilePath)
-
+mergeAll(gitUrl,gitFilePath,gitBranch,csvDataList)
 
 #_subModuleList = readSubModuleCfg(gitFiles + "/.gitmodules")
 
