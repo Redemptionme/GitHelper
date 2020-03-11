@@ -210,30 +210,34 @@ def updateModule(url,path,branch_name,csvDataList):
 
 def commitAll(path):
     repo = Repo(path)
+    bNothing = True
     for submodule in repo.submodules: 
         subrepo = submodule.module()
-        if subrepo.is_dirty():
-            if is_win:
+        if subrepo.is_dirty(untracked_files=True):
+            bNothing = False
+            if isWin:
                 batStr = '"TortoiseGitProc.exe" /command:commit /path:' + subrepo.working_dir +' /closeonend:3'
                 os.system(batStr)
             elif isMac:
                 subrepo.git.commit( m='提交信息' )
-    if is_win:
-        if repo.is_dirty():
+     
+    if repo.is_dirty(untracked_files=True):
+        bNothing = False
+        if isWin:
             batStr = '"TortoiseGitProc.exe" /command:commit /path:' + repo.working_dir +' /closeonend:3'
             os.system(batStr)
         elif isMac:
-                repo.git.commit( m='提交信息' )
+            repo.git.commit( m='提交信息' )
+    
+    if bNothing:
+        print(repo.git.status())   # 返回通常的status几句信息 
 
 def mergeMainBranch():
     print('1')
-
-
+ 
 def pullAll(url,path,branch_name,csvDataList):
     repo = Repo(path)
     remote = repo.remote()
-    remote.fetch()
-    remote.pull()
     for submodule in repo.submodules: 
         submodule.update(init=True,recursive=True)
         subrepo = submodule.module()
@@ -246,6 +250,29 @@ def pullAll(url,path,branch_name,csvDataList):
         csvDataList.append(row)
         submodule.module().remote().fetch()
         submodule.module().remote().pull()
+
+    remote.fetch()
+    remote.pull()
+
+def mergeAll(url,path,branch_name,csvDataList):
+    repo = Repo(path)
+    remote = repo.remote()
+    remote.fetch()
+
+    for submodule in repo.submodules: 
+        submodule.update(init=True,recursive=True)
+        subrepo = submodule.module()
+        row = { keyHeaders[0]: changePath(subrepo.working_dir),
+            keyHeaders[1]: replaceRightFileName(subrepo.working_dir),
+            keyHeaders[2]: 0,
+            keyHeaders[3]: submodule.url,
+            keyHeaders[4]: changePath(subrepo.working_dir),
+            keyHeaders[5]: submodule.branch_name}
+        csvDataList.append(row)
+        submodule.module().remote().fetch()
+        submodule.module().remote().pull()
+ 
+    remote.pull()
 
 def mainModule(url,path,branch_name):
     
@@ -367,7 +394,7 @@ else:
 cfgList = readConfig(configPath,configName) 
 writeCsvByDict(configPath + '/' + configName,keyHeaders,csvDataList)
 
-
+commitAll(gitFilePath)
 
 
 #_subModuleList = readSubModuleCfg(gitFiles + "/.gitmodules")
