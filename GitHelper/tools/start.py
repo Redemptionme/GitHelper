@@ -17,6 +17,7 @@ def isMac():
     return platform.system() == "Darwin"
     
 # 安装准备软件，目前只支持Windows
+# git lfs install
 def prepareGitPython(ptName):     
     print("--------安装GitPythonGitPython-----------")
     if isWin:
@@ -181,6 +182,7 @@ def initModule(url,path,branch_name,csvDataList):
 
 def updateModule(url,path,branch_name,csvDataList):
     repo = Repo(path)
+    print(repo.config_reader())
     remote = repo.remote()
     remote.fetch()
     remote.pull()
@@ -268,9 +270,32 @@ def mergeAll(url,path,branch_name,csvDataList):
             keyHeaders[5]: submodule.branch_name}
         csvDataList.append(row)
         submodule.module().remote().fetch()
-        remoteBranch = subrepo.git.branch('-r')['origin/' + submodule.branch_name] 
-        subrepo.index.merge_tree(remoteBranch)
- 
+        if isWin():
+            batStr = '"TortoiseGitProc.exe" /command:merge remotes/origin/'+ submodule.branch_name + ' /path:' + repo.working_dir +' /closeonend:3'
+            print(batStr)
+            os.system(batStr)
+        elif isMac():
+            # master = repo.heads.master
+            # other = repo.create_head('other', 'HEAD^')
+            # other.checkout()
+            # repo.index.merge_tree(master)
+            # repo.index.commit('Merge from master to other')
+            # current = subrepo.active_branch
+            # t = subrepo.branches
+            # #current = repo.branches ['feature'] 
+            # master = subrepo.branches ['Branch_master'] 
+            # base = subrepo.merge_base（current，master）
+            # subrepo.index.merge_tree（master，base = base ）
+            # remoteBranch = subrepo.git.branch('-r')['origin/' + submodule.branch_name] 
+            # subrepo.index.merge_tree(remoteBranch)
+            print(isMac)
+    t = repo.branches
+    t2 = repo.heads
+    #master = repo.heads.master
+    #other = repo.create_head('other', 'HEAD^')
+    #other.checkout()
+    repo.index.merge_tree(master)
+    repo.index.commit('Merge from master to other')
     remoteBranch = repo.git.branch('-r')['origin/' + branch_name] 
     repo.index.merge_tree(remoteBranch)
  
