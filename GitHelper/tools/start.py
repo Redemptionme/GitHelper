@@ -289,11 +289,19 @@ def mergeAll(url,path,branch_name,csvDataList):
             # remoteBranch = subrepo.git.branch('-r')['origin/' + submodule.branch_name] 
             # subrepo.index.merge_tree(remoteBranch)
             print(isMac)
-    t = repo.branches
-    t2 = repo.heads
-    #master = repo.heads.master
-    #other = repo.create_head('other', 'HEAD^')
-    #other.checkout()
+    t = repo.branches[0]
+    t = repo.git.branch('-r')
+    t3 = repo.heads[0]
+    
+    git = repo.git
+    git.status()
+    git.checkout('HEAD', b="my_new_branch")
+    git.branch('another-new-one')
+    git.branch('-D', 'another-new-one')
+
+    master = repo.heads.master
+    other = repo.create_head('other', 'HEAD^')
+    other.checkout()
     repo.index.merge_tree(master)
     repo.index.commit('Merge from master to other')
     remoteBranch = repo.git.branch('-r')['origin/' + branch_name] 
