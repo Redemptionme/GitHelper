@@ -8,23 +8,40 @@ import re
 import git
 from git import *
 import shutil
+ 
+global bError
+bError = False 
 
+def printErr(parm):
+    global bError
+    bError = True
+    print(parm)
+
+
+global platformName
 platformName = platform.system()
 
 def isWin():
-    return platform.system() == "Windows" 
+    return platformName == "Windows" 
 def isMac():
-    return platform.system() == "Darwin"
-    
+    return platformName == "Darwin"
+
+def openFiles(path):
+    if isWin():
+        os.system("start explorer %s" % path)
+    elif isMac:
+        #TODO mac
+        print("TODO openFiles")
+
 # 安装准备软件，目前只支持Windows
 # git lfs install
 def prepareGitPython(ptName):     
     print("--------安装GitPythonGitPython-----------")
-    if isWin:
+    if isWin():
         os.system("pip install GitPython")    
         os.system("python -m pip install --upgrade pip") 
         
-    elif isMac:
+    elif isMac():
         os.system("#curl https://bootstrap.pypa.io/get-pip.py | python3")
         os.system("pip3 install GitPython")
     print("--------安装GitPythonGitPython Done---------------------")
@@ -95,14 +112,16 @@ def writeCsvByDict(filePath,headers,rows):
         f.close()
     
 
-def readConfig(filepath,csvName):
-    outList = []
+def readConfig(filepath,csvName,mainKey):
+    outList = {}
     with open(filepath + '/' + csvName) as f:
         f_csv = csv.DictReader(f)
         #print(f_csv)                
         for row in f_csv:
-            outList.append(row)
-            print(row)
+            #outList.append(row)
+            #print(row) 
+            outList[row[mainKey]] = row
+            
         #f_csv.# %%
     return outList
  
@@ -183,9 +202,8 @@ def initModule(url,path,branch_name,csvDataList):
 def updateModule(url,path,branch_name,csvDataList):
     repo = Repo(path)
     print(repo.config_reader())
-    remote = repo.remote()
-    remote.fetch()
-    remote.pull()
+    remote = repo.remote() 
+
     for submodule in repo.submodules: 
         submodule.update(init=True,recursive=True)
         subrepo = submodule.module()
@@ -196,8 +214,12 @@ def updateModule(url,path,branch_name,csvDataList):
             keyHeaders[4]: changePath(subrepo.working_dir),
             keyHeaders[5]: submodule.branch_name}
         csvDataList.append(row)
-        submodule.module().remote().fetch()
-        submodule.module().remote().pull()
+
+    try:
+        remote.pull() 
+    except GitCommandError as e:
+        printErr(e)  
+        
 
 
 #https://blog.csdn.net/tenfyguo/article/details/7380836
@@ -211,15 +233,15 @@ def commitAll(path):
         subrepo = submodule.module()
         if subrepo.is_dirty(untracked_files=True):
             bNothing = False
-            if isWin:
+            if isWin():
                 batStr = '"TortoiseGitProc.exe" /command:commit /path:' + subrepo.working_dir +' /closeonend:3'
                 os.system(batStr)
-            elif isMac:
+            elif isMac():
                 subrepo.git.commit( m='提交信息' )
      
     if repo.is_dirty(untracked_files=True):
         bNothing = False
-        if isWin:
+        if isWin():
             batStr = '"TortoiseGitProc.exe" /command:commit /path:' + repo.working_dir +' /closeonend:3'
             os.system(batStr)
         elif isMac:
@@ -245,10 +267,23 @@ def pullAll(url,path,branch_name,csvDataList):
             keyHeaders[5]: submodule.branch_name}
         csvDataList.append(row)
         submodule.module().remote().fetch()
-        submodule.module().remote().pull()
+        try:
+            subrepo.remote().pull()
+            print("子模块更新完毕" + subrepo.working_dir)
+        except GitCommandError as e:
+            printErr(e)
+            openFiles(subrepo.working_dir)
+            batStr = '"TortoiseGitProc.exe" /command:resolve /path:' + subrepo.working_dir +' /closeonend:3'
+            print(batStr)
+            os.system(batStr)
 
     remote.fetch()
-    remote.pull()
+    try:
+        remote.pull()
+        print("主模块更新完毕" + path)
+    except GitCommandError as e:
+        printErr(e)
+        openFiles(path)
 
 def mergeAll(url,path,branch_name,csvDataList):    
     # repo.remote().fetch()
@@ -306,8 +341,27 @@ def mergeAll(url,path,branch_name,csvDataList):
     repo.index.commit('Merge from master to other')
     remoteBranch = repo.git.branch('-r')['origin/' + branch_name] 
     repo.index.merge_tree(remoteBranch)
- 
 
+
+def revertAll(url,path,branch_name,csvDataList):
+    repo = Repo(path)
+    remote = repo.remote()
+    for submodule in repo.submodules: 
+        submodule.update(init=True,recursive=True)
+        subrepo = submodule.module()
+        row = { keyHeaders[0]: changePath(subrepo.working_dir),
+            keyHeaders[1]: replaceRightFileName(subrepo.working_dir),
+            keyHeaders[2]: 0,
+            keyHeaders[3]: submodule.url,
+            keyHeaders[4]: changePath(subrepo.working_dir),
+            keyHeaders[5]: submodule.branch_name}
+        csvDataList.append(row)
+        submodule.module().remote().fetch()
+        submodule.module().remote().pull()
+
+    remote.fetch()
+    remote.pull()
+ 
 def mainModule(url,path,branch_name):
     
     bGitFiles = False
@@ -401,10 +455,25 @@ keyHeaders = ['ProjectPath','ProjectName','isMain','Url','FilePath','Branch']
 
 
  # 输入参数
-gitUrl = 'https://gitlab.skyunion.net/hanlinhe/tfather.git'
-gitProjectName = 'test'
-gitFilePath = pyFiles[: - 26] + '/' + gitProjectName
-gitBranch = 'master'
+# gitUrl = 'https://gitlab.skyunion.net/hanlinhe/tfather.git'
+# gitProjectName = 'test'
+# gitFilePath = pyFiles[: - 26] + '/' + gitProjectName
+# gitBranch = 'master'
+
+# iniCsvCfgKey(configPath,'inputCfg.csv',['Key','Value'])
+# writeCsvByDict(configPath + '/' + 'inputCfg.csv',['Key','Value'],
+#                                                  [{'Key':'gitFilePath','Value':gitFilePath},
+#                                                   {'Key':'gitUrl','Value':gitUrl},
+#                                                   {'Key':'gitProjectName','Value':gitProjectName},
+#                                                   {'Key':'gitBranch','Value':gitBranch},
+#                                                  ])
+
+qhCfgName  = 'inputCfg.csv'
+inpuDataList = readConfig(configPath,qhCfgName,'Key') 
+gitUrl = inpuDataList['gitUrl']['Value']
+gitProjectName = inpuDataList['gitProjectName']['Value']
+gitFilePath = inpuDataList['gitFilePath']['Value']
+gitBranch = inpuDataList['gitBranch']['Value'] 
 
 #removeFiles(gitFilePath)
 #removeFiles(configPath)
@@ -424,11 +493,18 @@ if IsFirstCheckOut(gitFilePath):
 else:
     updateModule(gitUrl,gitFilePath,gitBranch,csvDataList)
 
-cfgList = readConfig(configPath,configName) 
+cfgList = readConfig(configPath,configName,'ProjectPath') 
 writeCsvByDict(configPath + '/' + configName,keyHeaders,csvDataList)
 
-commitAll(gitFilePath)
-mergeAll(gitUrl,gitFilePath,gitBranch,csvDataList)
+#inputCfgList = readConfig(configPath,configName) 
+#commitAll(gitFilePath)  #test ok
+
+#pullAll(gitUrl,gitFilePath,gitBranch,csvDataList) test ok
+
+
+if bError == True:
+    os.system("pause")
+#mergeAll(gitUrl,gitFilePath,gitBranch,csvDataList)
 
 #_subModuleList = readSubModuleCfg(gitFiles + "/.gitmodules")
 
@@ -449,4 +525,4 @@ mergeAll(gitUrl,gitFilePath,gitBranch,csvDataList)
 # print(does_exist)
 
 
-# os.system("pause")    
+#     
