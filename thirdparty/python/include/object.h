@@ -182,6 +182,7 @@ typedef struct{
     void *pfunc; /* function pointer */
 } PyType_Slot;
 
+#undef  slots
 typedef struct{
     const char* name;
     int basicsize;
@@ -189,6 +190,8 @@ typedef struct{
     unsigned int flags;
     PyType_Slot *slots; /* terminated by slot==0. */
 } PyType_Spec;
+#define  slots Q_SLOTS
+
 
 PyAPI_FUNC(PyObject*) PyType_FromSpec(PyType_Spec*);
 #if !defined(Py_LIMITED_API) || Py_LIMITED_API+0 >= 0x03030000

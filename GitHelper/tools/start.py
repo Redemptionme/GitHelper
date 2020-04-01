@@ -8,7 +8,25 @@ import re
 import git
 from git import *
 import shutil
+
+
+
+# os.system("pip install PyQt5")
+# os.system("pip install PyQt5-tools")
  
+from PyQt5.QtWidgets import QApplication, QWidget
+
+if __name__ == '__main__':
+    app = QApplication(sys.argv)  # 创建一个应用
+
+    w = QWidget()  # 在这个应用条件下创建一个窗口
+    w.resize(500, 150)  # 重新设置大小
+    w.move(100, 100)  # 移动下距离
+    w.setWindowTitle("Hello world!")  # 设置标题
+    w.show()  # 显示这个窗口
+
+    sys.exit(app.exec_())  # 将app的退出信号传给程序进程，让程序进程退出
+
 global bError
 bError = False 
 

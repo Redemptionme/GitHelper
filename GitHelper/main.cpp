@@ -4,10 +4,10 @@
 
 int main(int argc, char *argv[])
 {
-   /* Py_Initialize();
-    PyRun_SimpleString("print 'hello'");
+    //Py_Initialize();
+    //PyRun_SimpleString("print 'hello'");
 
-    Py_Finalize();    */
+    //Py_Finalize();    
 
 
     QApplication a(argc, argv);
